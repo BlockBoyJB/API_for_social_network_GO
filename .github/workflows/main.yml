@@ -1,0 +1,30 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22.0
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: create test db
+        run: docker run --name postgres --rm -d -p 6000:6000 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=1234567890 -e POSTGRES_DB=postgres postgres:15 -p 6000
+
+      - name: create redis db
+        run: docker run --name redis --rm -d -p 6379:6379 redis:latest
+
+      - name: run tests
+        run: go test -v ./...
+
+      - name: remove containers
+        run: docker stop postgres redis

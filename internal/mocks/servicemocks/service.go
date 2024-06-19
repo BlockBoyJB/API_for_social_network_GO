@@ -79,19 +79,19 @@ func (mr *MockAuthMockRecorder) DeleteUser(ctx, input interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockAuth)(nil).DeleteUser), ctx, input)
 }
 
-// ParseToken mocks base method.
-func (m *MockAuth) ParseToken(ctx context.Context, tokenString string) (string, error) {
+// RefreshToken mocks base method.
+func (m *MockAuth) RefreshToken(ctx context.Context, token string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseToken", ctx, tokenString)
+	ret := m.ctrl.Call(m, "RefreshToken", ctx, token)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ParseToken indicates an expected call of ParseToken.
-func (mr *MockAuthMockRecorder) ParseToken(ctx, tokenString interface{}) *gomock.Call {
+// RefreshToken indicates an expected call of RefreshToken.
+func (mr *MockAuthMockRecorder) RefreshToken(ctx, token interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseToken", reflect.TypeOf((*MockAuth)(nil).ParseToken), ctx, tokenString)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshToken", reflect.TypeOf((*MockAuth)(nil).RefreshToken), ctx, token)
 }
 
 // UpdateUsername mocks base method.
@@ -106,6 +106,21 @@ func (m *MockAuth) UpdateUsername(ctx context.Context, input service.UpdateUsern
 func (mr *MockAuthMockRecorder) UpdateUsername(ctx, input interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUsername", reflect.TypeOf((*MockAuth)(nil).UpdateUsername), ctx, input)
+}
+
+// ValidateToken mocks base method.
+func (m *MockAuth) ValidateToken(ctx context.Context, token string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateToken", ctx, token)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ValidateToken indicates an expected call of ValidateToken.
+func (mr *MockAuthMockRecorder) ValidateToken(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateToken", reflect.TypeOf((*MockAuth)(nil).ValidateToken), ctx, token)
 }
 
 // MockUser is a mock of User interface.

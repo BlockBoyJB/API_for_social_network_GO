@@ -37,7 +37,8 @@ type (
 	}
 	Auth interface {
 		CreateToken(ctx context.Context, input UserAuthInput) (string, error)
-		ParseToken(ctx context.Context, tokenString string) (string, error)
+		ValidateToken(ctx context.Context, token string) (string, error)
+		RefreshToken(ctx context.Context, token string) (string, error)
 
 		CreateUser(ctx context.Context, input UserCreateInput) error
 		DeleteUser(ctx context.Context, input UserDeleteInput) error

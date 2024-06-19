@@ -27,7 +27,7 @@ func (h *AuthMiddleware) AuthHandler(next echo.HandlerFunc) echo.HandlerFunc {
 			errorResponse(c, http.StatusUnauthorized, ErrInvalidAuthHeader.Error())
 			return nil
 		}
-		username, err := h.auth.ParseToken(c.Request().Context(), token)
+		username, err := h.auth.ValidateToken(c.Request().Context(), token)
 		if err != nil {
 			if errors.Is(err, service.ErrCannotParseToken) {
 				errorResponse(c, http.StatusUnauthorized, err.Error())

@@ -45,45 +45,26 @@ func (s *authService) CreateToken(ctx context.Context, input UserAuthInput) (str
 	if !ok || err != nil {
 		return "", err
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaims{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(s.tokenTTL).Unix(),
-			IssuedAt:  time.Now().Unix(),
-		},
-		Username: input.Username,
-	})
-	signedToken, err := token.SignedString([]byte(s.signKey))
-	if err != nil {
-		log.Errorf("%s/CreateToken error sign claims: %s", authServicePrefixLog, err)
-		return "", ErrCannotCreateToken
-	}
-	if err = s.redis.Pool.Set(ctx, defaultKeyPrefix+input.Username, signedToken, s.tokenTTL).Err(); err != nil {
-		log.Errorf("%s/CreateToken error save token to redis: %s", authServicePrefixLog, err)
-		return "", ErrCannotCreateToken
-	}
-	return signedToken, nil
+	return s.generateToken(ctx, input.Username)
 }
 
-func (s *authService) ParseToken(ctx context.Context, tokenString string) (string, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte(s.signKey), nil
-	})
+func (s *authService) RefreshToken(ctx context.Context, token string) (string, error) {
+	claims, err := s.parseToken(token)
 	if err != nil {
-		log.Errorf("%s/ParseToken error parse token: %s", authServicePrefixLog, err)
-		return "", ErrCannotParseToken
+		return "", err
 	}
-	if !token.Valid {
-		return "", ErrInvalidToken
-	}
-	claims, ok := token.Claims.(*TokenClaims)
-	if !ok {
-		return "", ErrCannotParseToken
+	return s.generateToken(ctx, claims.Username)
+}
+
+func (s *authService) ValidateToken(ctx context.Context, token string) (string, error) {
+	claims, err := s.parseToken(token)
+	if err != nil {
+		return "", err
 	}
 	redisToken, err := s.redis.Pool.Get(ctx, defaultKeyPrefix+claims.Username).Result()
-	if err != nil || redisToken != tokenString {
+	if err != nil || redisToken != token {
 		if err != nil {
-			log.Errorf("%s/ParseToken error find token from redis: %s", authServicePrefixLog, err)
+			log.Errorf("%s/ValidateToken error find token from redis: %s", authServicePrefixLog, err)
 		}
 		return "", ErrExpiredToken
 	}
@@ -153,4 +134,42 @@ func (s *authService) verifyPassword(ctx context.Context, username, password str
 		return false, ErrIncorrectPassword
 	}
 	return true, nil
+}
+
+func (s *authService) generateToken(ctx context.Context, username string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(s.tokenTTL).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+		Username: username,
+	})
+	signedToken, err := token.SignedString([]byte(s.signKey))
+	if err != nil {
+		log.Errorf("%s/generateToken error sign claims: %s", authServicePrefixLog, err)
+		return "", ErrCannotCreateToken
+	}
+	if err = s.redis.Pool.Set(ctx, defaultKeyPrefix+username, signedToken, s.tokenTTL).Err(); err != nil {
+		log.Errorf("%s/generateToken error save token to redis: %s", authServicePrefixLog, err)
+		return "", ErrCannotCreateToken
+	}
+	return signedToken, nil
+}
+
+func (s *authService) parseToken(tokenString string) (*TokenClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(s.signKey), nil
+	})
+	if err != nil {
+		log.Errorf("%s/parseToken error parse token: %s", authServicePrefixLog, err)
+		return nil, ErrCannotParseToken
+	}
+	if !token.Valid {
+		return nil, ErrInvalidToken
+	}
+	claims, ok := token.Claims.(*TokenClaims)
+	if !ok {
+		return nil, ErrCannotParseToken
+	}
+	return claims, nil
 }

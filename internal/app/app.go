@@ -3,8 +3,10 @@ package app
 import (
 	"API_for_SN_go/config"
 	v1 "API_for_SN_go/internal/api/v1"
+	"API_for_SN_go/internal/grpc"
 	"API_for_SN_go/internal/repo"
 	"API_for_SN_go/internal/service"
+	"API_for_SN_go/pkg/grpcserver"
 	"API_for_SN_go/pkg/hasher"
 	"API_for_SN_go/pkg/httpserver"
 	"API_for_SN_go/pkg/postgres"
@@ -13,7 +15,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
-
 	"os"
 	"os/signal"
 	"syscall"
@@ -77,24 +78,39 @@ func Run() {
 
 	// http server
 	httpServer := httpserver.NewServer(handler, httpserver.Port(cfg.HTTP.Port))
+
+	// grpc handler
+	g := grpc.NewGRPC(services)
+
+	// grpc server
+	grpcServer, err := grpcserver.NewServer(g)
+	if err != nil {
+		log.Fatalf("Initializing grpc server error: %s", err)
+	}
+
 	log.Infof("App started! Listening port %s", cfg.HTTP.Port)
 
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
 	case s := <-interrupt:
 		log.Info("app run, signal " + s.String())
 
 	case err = <-httpServer.Notify():
-		log.Errorf("/app/run server notify error: %s", err)
+		log.Errorf("/app/run http server notify error: %s", err)
+
+	case err = <-grpcServer.Notify():
+		log.Errorf("/app/run grpc server notify error: %s", err)
 	}
 
 	// graceful shutdown
 	err = httpServer.Shutdown()
 	if err != nil {
-		log.Errorf("/app/run server shutdown error: %s", err)
+		log.Errorf("/app/run http server shutdown error: %s", err)
 	}
+	grpcServer.Shutdown()
+
 	log.Infof("App shutdown with exit code 0")
 }
 

@@ -34,3 +34,7 @@ init-tests:
 	go test -v ./...
 
 tests: init-test-containers init-tests stop-test-containers
+
+proto:
+	protoc -I proto proto/auth/*.proto --go_out=./proto/ --go_opt=paths=source_relative --go-grpc_out=./proto/ --go-grpc_opt=paths=source_relative
+.PHONY: proto
